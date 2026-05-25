@@ -847,7 +847,7 @@ class Simulator:
         if not pickle_each:
             return res
 
-        pickle.dump(res, open('results/{0}/{0}_{1}_data.dat'.format(params["start_time"],run_index), 'wb'))
+        pickle.dump(res, open('results/{0}/{0}_{1}_data.dat'.format(start_time,run_index), 'wb'))
 
         return {}
 
