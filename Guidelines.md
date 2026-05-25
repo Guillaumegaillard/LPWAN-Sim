@@ -101,5 +101,6 @@ Specific definitions and behavior for Mioty networks. In particular, time freque
 - improve the global structure of the simulator: remove obsolete features, misplaced variables and functions, etc.
 - complete the Mioty code for down-link and other modes;
 - improve the design of device clusters in the simulation.
+- better define noise models, better quantify Rayleigh values
 
 
