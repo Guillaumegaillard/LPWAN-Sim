@@ -1122,7 +1122,7 @@ class Simulator:
                 sum_data_gen+=n.cycle
                 legit_having_gen+=1
         if sum_data_gen>0:
-            res["TOTAL"]["mean_retry"]=sum_retries/sum_data_gen/legit_having_gen
+            res["TOTAL"]["mean_retry"]=sum_retries/sum_data_gen#/legit_having_gen
             res["TOTAL"]["mean_payload_length"]=sum(n.n_payload_gen for n in legit_nodes)/sum_data_gen
         else:
             res["TOTAL"]["mean_retry"]=-1 
