@@ -84,7 +84,12 @@ def prepare_default_network(nrNodes=10, nrGWs=2, avgSendTime=10000, targetSchedP
         "shuffle_start": False,
 
                     ######### Simulation properties ################
-        "exp4SF": 12,
+        # "exp4SF": 12,
+        "net_SF": 12,
+        "net_BW": 125,
+        "net_CR": 1,
+
+
         "Ptx": constants.Ptx_subGHz,
         "minsensi": constants.sensi_subGHz[6,2],     # 6th row is SF12, 2nd column is BW125
         "transmit_at_adjusted_power": False,
@@ -153,7 +158,7 @@ def prepare_network(nrNodes, nrGWs, avgSendTime, targetSchedPacket, modulation, 
         "max_payload_size":150, # max_expected_payload_size, a protocol parameter
         "targetSchedPacket":targetSchedPacket,
 
-        "distrib":"expo",
+        "distrib":"expo", #traffic distrib, can be exponential (expo), periodic (periodic, default), uniform (unif), specific (spe100, spe500)
         
         "shuffle_start":False,
 

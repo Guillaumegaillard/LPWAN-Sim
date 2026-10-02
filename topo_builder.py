@@ -15,8 +15,6 @@ import sys
 
 rng = np.random.default_rng()
 
-# A switch for further computations
-lora24GHz = False
 
 
 # build a crown of equi-distant nodes
@@ -97,47 +95,13 @@ def get_non_overlap_unif_distrib(nb_nodes,center_x,center_y,maxDist,minInterDist
 # build a uniformly spread 2D disk topo based on: 
 ## a number of devices *nb_nodes*
 ## a number of GWs *nb_gws* (distributed on a circle of radius (maxDist*(1-1/(nb_gws-1)))) and on center (if >1 else just on center)
-## a PHY layer setting *experiment* (inherited from LoRaSim, obsolete) =># TODO: remove ref to *experiment*
-## an optional maximum distance to the center, *static_maxDist*
-#### default maxDist is max. range of a noiseless GW-ED link for the given experiment
+## a maximum distance to the center, *static_maxDist*
 ### cluster_params= (clustering algorithm, number of clusters, distance, (min, max) nodes per cluster
-def build_topo(nb_nodes,nb_gws,experiment,static_maxDist=0,cluster_params=('none',0,0,(0,0))):
+def build_topo(nb_nodes,nb_gws,static_maxDist=2000,cluster_params=('none',0,0,(0,0))):
     topo={}
 
-    # if no max has been given
-    if static_maxDist==0:
-        if lora24GHz:
-            Ptx=constants.Ptx_2dot4GHz
-        else:
-            Ptx=constants.Ptx_subGHz
-
-        if lora24GHz:
-            if experiment in [0,1,4,6,7]:
-                minsensi = constants.sensi_2dot4GHz[7,2]     # 7th row is SF12, 2nd column is BW203
-            elif experiment == 2:
-                minsensi = constants.sensi_2dot4GHz[0,5]     # row 0 is SF5, 5th column is BW1625
-            elif experiment in [3,5]:
-                minsensi = np.amin(constants.sensi_2dot4GHz) ## Experiment 3 can use any setting, so take minimum
-        else:
-            if experiment in [0,1,4,6,7]:
-                minsensi = constants.sensi_subGHz[6,2]     # 6th row is SF12, 2nd column is BW125
-            elif experiment == 2:
-                minsensi = constants.sensi_subGHz[0,4]     # first row is SF6, 4th column is BW500
-            elif experiment =="SF7BW500CAD4":
-                minsensi = constants.sensi_subGHz[1,3]     # second row is SF7, 4th column is BW500
-            elif experiment in [3,5]:
-                minsensi = np.amin(constants.sensi_subGHz) ## Experiment 3 can use any setting, so take minimum
-            
-        Lpl = Ptx - minsensi
-        print("amin", minsensi, "Lpl", Lpl)
-        maxDist = constants.d0*(math.e**((Lpl-constants.Lpld0)/(10.0*constants.gamma_GW)))
-        
-        topo["amin"]=minsensi
-        topo["Lpl"]=Lpl
-        topo["maxDist"]=maxDist
-    else:
-        maxDist = static_maxDist 
-        topo["maxDist"]=maxDist
+    maxDist = static_maxDist 
+    topo["maxDist"]=maxDist
 
     # topo center coords
     center_x = maxDist+10
@@ -390,9 +354,8 @@ def build_topo(nb_nodes,nb_gws,experiment,static_maxDist=0,cluster_params=('none
 if __name__ == '__main__':
     nb_nodes=20
     nb_gws=5
-    experiment=4
 
-    # topo_example = build_topo(nb_nodes,experiment,static_maxDist=0)
-    topo_example = build_topo(nb_nodes,nb_gws,experiment,static_maxDist=100)
+    # topo_example = build_topo(nb_nodes,static_maxDist=0)
+    topo_example = build_topo(nb_nodes,nb_gws,static_maxDist=100)
     print(topo_example)
 

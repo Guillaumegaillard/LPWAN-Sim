@@ -355,20 +355,19 @@ class Node():
             self.queue = [f-1 for f in self.queue]
 
             # produce next packet
-            if self.simu.networks[self.net_id]["experiment"]==6:
+            if self.distrib== "spe100":
                 #normally 9 nodes with 100ms delay between each node
                 inter_gen_delay=self.cycle*self.period-self.simu.env.now+self.node_id*100
-            elif self.simu.networks[self.net_id]["experiment"]==7:
+            if self.distrib== "spe500":
                 #normally 5 nodes with 500ms delay between each node
                 inter_gen_delay=self.cycle*self.period-self.simu.env.now+self.node_id*500            
-            else:
-                if self.distrib== constants.perioDistribType:
-                    inter_gen_delay=self.period
-                if self.distrib==constants.expoDistribType:
-                    inter_gen_delay = rng.exponential(float(self.period))
-                    # transmit_wait = rng.expovariate(1.0/float(self.period))
-                if self.distrib==constants.uniformDistribType:
-                    inter_gen_delay = rng.uniform(max(2000,self.period-5000),self.period+5000)        
+            if self.distrib== constants.perioDistribType:
+                inter_gen_delay=self.period
+            if self.distrib==constants.expoDistribType:
+                inter_gen_delay = rng.exponential(float(self.period))
+                # transmit_wait = rng.expovariate(1.0/float(self.period))
+            if self.distrib==constants.uniformDistribType:
+                inter_gen_delay = rng.uniform(max(2000,self.period-5000),self.period+5000)        
             
             # next_gen_time=last_gen_time+inter_gen_delay
             if self.simu.networks[self.net_id]["shuffle_start"] and self.next_gen_time==-1:

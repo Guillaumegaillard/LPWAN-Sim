@@ -29,12 +29,12 @@ CAD_distrib_funcs = {}
 #
 # retrieve sensitivity according to scenario, config, and receiver type
 #
-def get_sensitivity(spreading_factor, bandwidth, receiver_type = "GW", experiment = 4, techno = "lora868MHz", GW_sensitivity_gain = 0):
-    if experiment == 4:
+def get_sensitivity(spreading_factor, bandwidth, receiver_type = "GW", techno = "lora868MHz", GW_sensitivity_gain = 0):
+    if techno == "lora868MHz":
         if receiver_type == "DEVICE":
             return(constants.sensi_subGHz[spreading_factor - 6, [125, 250, 500].index(bandwidth) + 1]) 
         return(-GW_sensitivity_gain + constants.sensi_GW_boosted[bandwidth][spreading_factor]) # -137 - 1.5
-    elif experiment == "SF7BW500CAD4":
+    elif techno == "868MHz_SF7BW500CAD4":
         if receiver_type == "DEVICE":
             return(constants.sensi_subGHz[spreading_factor - 6, [125, 250, 500].index(bandwidth) + 1]) 
         return(-127)
@@ -1844,40 +1844,12 @@ class LoRa_CSS_Packet(Generic_Elements.Packet):
             self.bw = rng.choice([125, 250, 500])
         self.cr = rng.integers(1, 5)
 
-        experiment = self.simu.networks[self.net_id]["experiment"]
-        # for certain experiments override these
-        if experiment == 1 or experiment == 0:
-            self.sf = 12
-            self.cr = 4
-            if self.simu.networks[self.net_id]["lora24GHz"]:
-                self.bw = 203.125
-            else:    
-                self.bw = 125
 
-        # for certain experiments override these
-        if experiment == 2:
-            if self.simu.networks[self.net_id]["lora24GHz"]:
-                self.sf = 5
-                self.cr = 1
-                self.bw = 1625            
-            else:
-                self.sf = 6
-                self.cr = 1
-                self.bw = 500
+        #2026 October
+        self.sf = self.simu.networks[self.net_id]["net_SF"]
+        self.bw = self.simu.networks[self.net_id]["net_BW"]
+        self.cr = self.simu.networks[self.net_id]["net_CR"]
 
-        # CURRENT EXPERIMENT IS 4 (from 2025-04-10)
-        if experiment in [4, 6, 7]:
-            if self.simu.networks[self.net_id]["lora24GHz"]:
-                self.bw = 203.125            
-            else:
-                self.bw = 125
-            self.sf = self.simu.networks[self.net_id]["exp4SF"] # CURRENTLY 12
-            self.cr = 1    
-
-        if experiment == "SF7BW500CAD4":
-            self.bw = 500
-            self.sf = 7
-            self.cr = 1    # CR is 1, 2, 3 or 4 for respective coding rates 4/5, 4/6, 4/7 or 4/8
 
             
         # this is by default not applied: adjust tx power according to expected path-loss 
@@ -2066,7 +2038,7 @@ def prepare_distrib_func(loss_per_building, aper, sf, bw, maxDist, radio_params,
                 CAD_Prx = np.clip(-1000, txp, txp + constants.GL - Lpl - noise - rayleigh - buildings_atten)
 
                 # 
-                predicted_PDRs = np.count_nonzero((CAD_Prx > get_sensitivity(sf, bw, receiver_type = "DEVICE", experiment = net["experiment"])), axis = 1)
+                predicted_PDRs = np.count_nonzero((CAD_Prx > get_sensitivity(sf, bw, receiver_type = "DEVICE")), axis = 1)
 
                 # >>> scipy.version.version : '1.6.2' requires window_length to be odd, not version 1.12.0 anymore
                 # window_length = max(50, int(2.2*maxDist/20))

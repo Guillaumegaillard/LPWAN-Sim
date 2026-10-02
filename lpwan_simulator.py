@@ -1011,7 +1011,7 @@ class Simulator:
             "externals_prop":netp["externals_prop"],
             "AvgSendTime": netp["avgSendTime"],
             "Distribution": 'expoDistribType' if netp["distribType"]==constants.expoDistribType else 'uniformDistribType',
-            "Experiment": netp["experiment"],
+            # "Experiment": netp["experiment"],
             # "Simtime": simtime,
             "Full Collision": netp["full_collision"],
             # "Default_TOA DATA": nodes[0].data_rectime,
@@ -1407,12 +1407,27 @@ def main_with_params(params):
         active_nodes.append(simu.networks[net_id]["nrNodes"])
 
         # traffic distribution 
+        if simu.networks[net_id]["distrib"] == "expo":
+            simu.networks[net_id]["distribType"] = constants.expoDistribType
+        elif simu.networks[net_id]["distrib"] == "unif":
+            simu.networks[net_id]["distribType"] = constants.uniformDistribType
+        elif simu.networks[net_id]["distrib"] == "spe100":
+            simu.networks[net_id]["distribType"] = constants.uniformDistribType
+        elif simu.networks[net_id]["distrib"] == "spe500":
+            simu.networks[net_id]["distribType"] = constants.uniformDistribType
+        else:
+            simu.networks[net_id]["distribType"] = constants.perioDistribType
+        
+
         simu.networks[net_id]["distribType"] = constants.expoDistribType if simu.networks[net_id]["distrib"] == "expo" else constants.uniformDistribType if simu.networks[net_id]["distrib"] == "unif" else constants.perioDistribType
         ### Alias "distrib" == "distribType"
 
-        # remaining definition from obsolete design: SF for LoRa-CSS in scenario "experiment 4" is 12
-        # TODO: remove obsolete declarations and check multi-SF scenarios 
-        simu.networks[net_id]["exp4SF"] = 12
+        # TODO: node or packet level SF changes, and check multi-SF scenarios 
+        # simu.networks[net_id]["exp4SF"] = 12
+        if not ("net_SF" in params["networks"][net_id]):
+            simu.networks[net_id]["net_SF"] = 12
+            simu.networks[net_id]["net_BW"] = 125
+            simu.networks[net_id]["net_CR"] = 1
 
     # Simulation parameters: 
     # Do we log events (an old verbose debug)? 
@@ -1902,8 +1917,8 @@ if __name__ == '__main__':
     
     # build topo for each net
     for net in params["networks"]:
-        # topos[0]=topo_builder.build_topo(nrNodes,nrGWs,experiment,maxDist_dev_gw,cluster_params=cluster_params)
-        topos[params["topo"]][len(topos[params["topo"]])]=topo_builder.build_topo(net["nrNodes"],net["nrGWs"],net["experiment"],net["maxDist_dev_gw"])
+        # topos[0]=topo_builder.build_topo(nrNodes,nrGWs,maxDist_dev_gw,cluster_params=cluster_params)
+        topos[params["topo"]][len(topos[params["topo"]])]=topo_builder.build_topo(net["nrNodes"],net["nrGWs"],net["maxDist_dev_gw"])
 
 
     # store topos so that they can be re-used for other simulations
