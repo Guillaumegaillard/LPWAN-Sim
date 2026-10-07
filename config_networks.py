@@ -527,6 +527,7 @@ if __name__ == '__main__':
         proto = "ALOHA"
         )
     )
+    networks[0]["net_SF"] = 9
     networks.append(prepare_network(
         nrNodes = 10,
         nrGWs = 2, 

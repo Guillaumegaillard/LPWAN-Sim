@@ -1995,7 +1995,7 @@ def get_CAD_prob(distance, txpower, net_id, in_same_cluster = False):
 
 # pre-simulate the CAD proba of success as the smoothed reception rate of 100 packets at each meter and interpolated
 # depends on propa variables and lora params
-def prepare_distrib_func(loss_per_building, aper, sf, bw, maxDist, radio_params, networks):
+def prepare_distrib_func(loss_per_building, aper, maxDist, radio_params, networks):
     # global CAD_distrib_funcs
     distrib_funcs = {}
     for txp in constants.power_levels:
@@ -2031,6 +2031,9 @@ def prepare_distrib_func(loss_per_building, aper, sf, bw, maxDist, radio_params,
 
 
             distrib_funcs[txp][net_id] = {}
+
+            if not (net["modulation"] == "LoRa-CSS"):
+                continue
             for intra_cluster_scenario in [0, 1]:
 
                 Lpl = constants.Lpld0 + 10*(CAD_gamma_EDs - net["intra_cluster_gamma_gain"]*intra_cluster_scenario)*np.log10(distances/constants.d0)
@@ -2038,7 +2041,7 @@ def prepare_distrib_func(loss_per_building, aper, sf, bw, maxDist, radio_params,
                 CAD_Prx = np.clip(-1000, txp, txp + constants.GL - Lpl - noise - rayleigh - buildings_atten)
 
                 # 
-                predicted_PDRs = np.count_nonzero((CAD_Prx > get_sensitivity(sf, bw, receiver_type = "DEVICE")), axis = 1)
+                predicted_PDRs = np.count_nonzero((CAD_Prx > get_sensitivity(net["net_SF"], net["net_BW"], receiver_type = "DEVICE")), axis = 1)
 
                 # >>> scipy.version.version : '1.6.2' requires window_length to be odd, not version 1.12.0 anymore
                 # window_length = max(50, int(2.2*maxDist/20))
@@ -2070,10 +2073,10 @@ def prepare_distrib_func(loss_per_building, aper, sf, bw, maxDist, radio_params,
 def prepare_CAD_model(maxDist, radio_params, networks):
 
 
-    prepare_distrib_func(constants.loss_per_building_CAD, constants.obstruction_dB_CAD, 12, 125, maxDist, radio_params, networks)
+    prepare_distrib_func(constants.loss_per_building_CAD, constants.obstruction_dB_CAD, maxDist, radio_params, networks)
 
     # CAD_distrib_funcs = prepare_distrib_func(constants.loss_per_building_CAD, constants.obstruction_dB_CAD, 12, 125, maxDist, networks)
-    # prepared for sf 12 bw 125
-    # in future scenarios with multi sf/ multi bw => # TODO: prepare a distrib_func matrix
+    # prepared for 1 sf 1 bw for each net (net_SF)
+    # in future scenarios with multi modifiable sf/ multi bw => # TODO: prepare a distrib_func matrix with all sf/bw possibilities
 
 

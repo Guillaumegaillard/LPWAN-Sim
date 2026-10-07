@@ -76,7 +76,10 @@ MCU_sleep = .005                                                # mA
 
 ### LoRa-CSS
 #only for BW125/BW500, in nAh for SF7/SF12
-#based on SX1262 Semtech's AN on CAD performance
+#based on SX1262 Semtech's AN on CAD performance 
+    # AN1200.48
+    # Rev 2.1
+    # November 2019
 cad_consumption = {
     "SF7":{
         "BW125":{
@@ -92,6 +95,22 @@ cad_consumption = {
             "4S":1.43,
             "8S":2.62,
             "16S":4.97,
+        },
+    },
+    "SF9":{
+        "BW125":{
+            "1S":7.33,
+            "2S":11.70,
+            "4S":20.44,
+            "8S":37.94,
+            "16S":72.91,
+        },
+        "BW500":{
+            "1S":2.06,#!!!20.6,
+            "2S":3.27,
+            "4S":5.69,
+            "8S":10.38,
+            "16S":20.05,
         },
     },
     "SF12":{
@@ -145,7 +164,7 @@ sensi_subGHz = np.array([sf6_subGHz,sf7_subGHz,sf8_subGHz,sf9_subGHz,sf10_subGHz
 # GW will have boosted rx 
 # see SX1261-2_V1.1.pdf p19
 sensi_GW_boosted = {
-    125:{12:-137}
+    125:{7:-124,9:-129,12:-137}
 }
 
 # determine impact of interference on sensitivity, based on an interpolation of observations in:

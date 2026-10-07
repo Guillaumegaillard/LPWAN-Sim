@@ -255,8 +255,9 @@ class Simulator:
 
     # retrieve a list of (partially) overlapping transmissions
     # TODO: this function is used in LoRa-CSS CAD evaluation to determine if a transmission occurs both at beginning and end of a CAD. => refine (there?) using proportion of both time and frequency overlaps, to weigh impact 
+    # TODO: multi BW in LoRa-CSS, SF/BW interfering pairs
     def get_transmitters_in_band(self,pair_id):
-        return [transmitter for transmitter in OnAir if self.frequencyCollision(transmitter, pair_id)]
+        return [transmitter for transmitter in OnAir if (self.frequencyCollision(transmitter, pair_id) and self.modulationCollision(transmitter, pair_id))]
         # return [transmitter for transmitter in OnAir if nodes[uid(*transmitter)].ch == nodes[uid(*pair_id)].ch]
 
     # provides current OnAir list to tech-specific start_listening() func.
@@ -787,7 +788,7 @@ class Simulator:
         rx_uid = uid(*rx_id)
         rss = nodes[tx_uid].packet.rx_array[rx_uid]
         if self.frequencyCollision(tx_id,rx_id) and self.modulationCollision(tx_id,rx_id):
-            # TODO: different SF/BW pairs? current simu (2026-05-05) is SF12/BW125 only, mono, but...
+            # TODO: different SF/BW pairs? current simu (2026-10-05) is BW125 only, mono SF, but...
             return (rss - nodes[tx_uid].packet.noise_dB_arr[rx_uid] >= nodes[rx_uid].get_rx_sensitivity(nodes[tx_uid].packet.get_tx_config()))
 
         return False
@@ -1424,7 +1425,7 @@ def main_with_params(params):
 
         # TODO: node or packet level SF changes, and check multi-SF scenarios 
         # simu.networks[net_id]["exp4SF"] = 12
-        if not ("net_SF" in params["networks"][net_id]):
+        if not ("net_SF" in params["networks"][net_id]): #default LoRa-CSS values
             simu.networks[net_id]["net_SF"] = 12
             simu.networks[net_id]["net_BW"] = 125
             simu.networks[net_id]["net_CR"] = 1
