@@ -8,7 +8,7 @@
 
 
 import numpy as np
-rng = np.random.default_rng()
+# rng = np.random.default_rng()
 import sys
 
 import constants
@@ -82,9 +82,9 @@ class Packet():
     def setDataPayloadSize(self):
         if self.simu.networks[self.net_id]["variablePayloadSize"]:
             if self.simu.networks[self.net_id]["normalPayloadSize"]:
-                self.dataPayloadSize=rng.normal(self.simu.networks[self.net_id]["normaldist_mean_payload_size"], self.simu.networks[self.net_id]["normaldist_sigma_payload_size"],1).astype('int').clip(self.simu.networks[self.net_id]["dist_min_payload_size"],self.simu.networks[self.net_id]["dist_max_payload_size"])[0]
+                self.dataPayloadSize=self.simu.rng.normal(self.simu.networks[self.net_id]["normaldist_mean_payload_size"], self.simu.networks[self.net_id]["normaldist_sigma_payload_size"],1).astype('int').clip(self.simu.networks[self.net_id]["dist_min_payload_size"],self.simu.networks[self.net_id]["dist_max_payload_size"])[0]
             else: # uniform
-                self.dataPayloadSize=rng.integers(self.simu.networks[self.net_id]["dist_min_payload_size"], self.simu.networks[self.net_id]["dist_max_payload_size"]+1)
+                self.dataPayloadSize=self.simu.rng.integers(self.simu.networks[self.net_id]["dist_min_payload_size"], self.simu.networks[self.net_id]["dist_max_payload_size"]+1)
 
 
     #
@@ -102,8 +102,8 @@ class Packet():
     def update_noise(self):
         ## fast local noise
         if self.simu.radio_params["gaussian_noise"]:
-            self.noise_dB = np.clip(rng.normal(constants.noise_mu_dB,constants.noise_sigma_dB,self.dist_GWs.shape),0,2*constants.noise_mu_dB)
-            self.noise_dB_arr = np.clip(rng.normal(constants.noise_mu_dB,constants.noise_sigma_dB,self.noise_dB_arr.shape),0,2*constants.noise_mu_dB)
+            self.noise_dB = np.clip(self.simu.rng.normal(constants.noise_mu_dB,constants.noise_sigma_dB,self.dist_GWs.shape),0,2*constants.noise_mu_dB)
+            self.noise_dB_arr = np.clip(self.simu.rng.normal(constants.noise_mu_dB,constants.noise_sigma_dB,self.noise_dB_arr.shape),0,2*constants.noise_mu_dB)
 
     # multipath/rayleigh/fast is updated after each transmission
     def update_multi_path_fading(self):
@@ -115,8 +115,8 @@ class Packet():
             # older version
             # rayleigh_dB = rng.rayleigh(scale=np.sqrt(2 / np.pi)*rayleigh_mean_dB,size=self.dist_GWs.shape) - rayleigh_mean_dB
             # rayleigh_dB_arr = rng.rayleigh(scale=np.sqrt(2 / np.pi)*rayleigh_mean_dB,size=rayleigh_dB_arr.shape) - rayleigh_mean_dB
-            self.rayleigh_dB = -10*np.log10(rng.exponential(scale=10**(.1*self.simu.radio_params["rayleigh_mean_dB"]), size=self.dist_GWs.shape))
-            self.rayleigh_dB_arr = -10*np.log10(rng.exponential(scale=10**(.1*self.simu.radio_params["rayleigh_mean_dB"]), size=self.rayleigh_dB_arr.shape))
+            self.rayleigh_dB = -10*np.log10(self.simu.rng.exponential(scale=10**(.1*self.simu.radio_params["rayleigh_mean_dB"]), size=self.dist_GWs.shape))
+            self.rayleigh_dB_arr = -10*np.log10(self.simu.rng.exponential(scale=10**(.1*self.simu.radio_params["rayleigh_mean_dB"]), size=self.rayleigh_dB_arr.shape))
 
         self.rx_array -= self.rayleigh_dB_arr
         self.rss_GWs -= self.rayleigh_dB
@@ -131,8 +131,8 @@ class Packet():
             self.local_obstruction_dB_arr = np.zeros((self.simu.nrNodes))
 
             if self.simu.radio_params["locally_obstructed"]:
-                self.local_obstruction_dB = np.clip(rng.normal(constants.obstruction_dB_GW,constants.obstruction_dB_GW,self.dist_GWs.shape),0,2*constants.obstruction_dB_GW)
-                self.local_obstruction_dB_arr = np.clip(rng.normal(constants.obstruction_dB,constants.obstruction_dB,self.local_obstruction_dB_arr.shape),0,2*constants.obstruction_dB)
+                self.local_obstruction_dB = np.clip(self.simu.rng.normal(constants.obstruction_dB_GW,constants.obstruction_dB_GW,self.dist_GWs.shape),0,2*constants.obstruction_dB_GW)
+                self.local_obstruction_dB_arr = np.clip(self.simu.rng.normal(constants.obstruction_dB,constants.obstruction_dB,self.local_obstruction_dB_arr.shape),0,2*constants.obstruction_dB)
 
             # link shadowing accounting for buildings
             self.buildings_atten_dB = np.zeros((self.dist_GWs.shape)) # to GWs
@@ -221,7 +221,7 @@ class Node():
 
         # channel is randomly initialized as a sequence per device        
         self.channel_sequence = self.avail_chans[:]
-        rng.shuffle(self.channel_sequence)
+        self.simu.rng.shuffle(self.channel_sequence)
 
         # self.ch = rng.choice(self.avail_chans)
         self.ch = self.channel_sequence[0]
@@ -364,14 +364,14 @@ class Node():
             if self.distrib== constants.perioDistribType:
                 inter_gen_delay=self.period
             if self.distrib==constants.expoDistribType:
-                inter_gen_delay = rng.exponential(float(self.period))
+                inter_gen_delay = self.simu.rng.exponential(float(self.period))
                 # transmit_wait = rng.expovariate(1.0/float(self.period))
             if self.distrib==constants.uniformDistribType:
-                inter_gen_delay = rng.uniform(max(2000,self.period-5000),self.period+5000)        
+                inter_gen_delay = self.simu.rng.uniform(max(2000,self.period-5000),self.period+5000)        
             
             # next_gen_time=last_gen_time+inter_gen_delay
             if self.simu.networks[self.net_id]["shuffle_start"] and self.next_gen_time==-1:
-                self.next_gen_time+=rng.uniform(0,self.period)
+                self.next_gen_time+=self.simu.rng.uniform(0,self.period)
             self.next_gen_time+=inter_gen_delay
             self.gen_times.append(self.next_gen_time)
 

@@ -12,7 +12,7 @@ from scipy.ndimage import gaussian_filter as scipy_ndimage_gaussian_filter
 
 import constants
 
-rng = np.random.default_rng()
+# rng = np.random.default_rng()
 
 ## This class periodically updates a noise map with spatial correlations, using a Gaussian filter.
 class Radio_environment:
@@ -24,7 +24,7 @@ class Radio_environment:
     def refresh_correlated_noise_map(self):
         
         # white_noise = rng.normal(loc=constants.noise_mu_dB, scale=32, size=self.noise_map.shape)
-        white_noise = rng.normal(loc=constants.noise_mu_dB, scale=self.simu.radio_params["corr_noise_white_scale"], size=self.noise_map.shape)
+        white_noise = self.simu.rng.normal(loc=constants.noise_mu_dB, scale=self.simu.radio_params["corr_noise_white_scale"], size=self.noise_map.shape)
 
         self.noise_map = np.clip(scipy_ndimage_gaussian_filter(white_noise, sigma=self.simu.radio_params["corr_noise_gauss_filter_sigma"]),0,2*constants.noise_mu_dB)    
         # self.noise_map = np.clip(scipy_ndimage_gaussian_filter(white_noise, sigma=12),0,2*constants.noise_mu_dB)    

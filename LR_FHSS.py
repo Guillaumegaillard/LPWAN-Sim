@@ -8,7 +8,7 @@
 # and from https://github.com/Xexell/LR-FHSS-sim #############################################
 
 import numpy as np
-rng = np.random.default_rng()
+# rng = np.random.default_rng()
 
 import Generic_Elements
 import constants
@@ -329,7 +329,7 @@ class LR_FHSS_Packet(Generic_Elements.Packet):
         self.header_duration = header_duration
         self.payload_duration = payload_duration
 
-        self.group = rng.integers(0,8) # random init in one of the 8 groups
+        self.group = self.simu.rng.integers(0,8) # random init in one of the 8 groups
 
     # give tx config info to receiver        
     def get_tx_config(self):
@@ -346,7 +346,7 @@ class LR_FHSS_Packet(Generic_Elements.Packet):
         self.match_code(self.code)
 
         # choose frequencies according to group and obw 
-        self.LR_FHSS_channels = rng.choice(range(self.group,self.obw*8,8), size=self.nb_headers+self.nb_payloads)
+        self.LR_FHSS_channels = self.simu.rng.choice(range(self.group,self.obw*8,8), size=self.nb_headers+self.nb_payloads)
         self.index_transmission = 0
         self.fragments = []
         # headers

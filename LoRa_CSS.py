@@ -9,7 +9,7 @@
 
 import simpy
 import numpy as np
-rng = np.random.default_rng()
+# rng = np.random.default_rng()
 
 from scipy.signal import savgol_filter
 import math
@@ -627,7 +627,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                         "node_id":packetsOnAir[pkid],
                         "toa":self.simu.get_rectime(packetsOnAir[pkid]),
                         "is_RTS":self.simu.get_ptype(packetsOnAir[pkid]) == constants.rtsPacketType,
-                        "dataPayloadSize_in_RTS":rng.integers(0, self.simu.networks[self.net_id]["max_payload_size"] + 1) if dpls == (self.simu.networks[self.net_id]["profiles"][self.profile]["CANL22_RTS_hdr_size"] + 1) else dpls, # if Data of RTS size, random size
+                        "dataPayloadSize_in_RTS":self.simu.rng.integers(0, self.simu.networks[self.net_id]["max_payload_size"] + 1) if dpls == (self.simu.networks[self.net_id]["profiles"][self.profile]["CANL22_RTS_hdr_size"] + 1) else dpls, # if Data of RTS size, random size
                         "dataPayloadSize_in_EH":dpls, # in explicit header
                         "start":self.simu.get_addTime(packetsOnAir[pkid]),
                         "interfering":previous_frames_impacted_by_this_one,
@@ -657,17 +657,17 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                 if self.simu.networks[self.net_id]["var_CAD_prob"]: #general case 
                     if self.simu.networks[self.net_id]["full_distances"]:
 
-                        if rng.random()*100 <= get_CAD_prob(self.simu.get_dist(self.pid, devid), self.simu.get_txpow(devid), self.net_id, self.simu.same_cluster(self.pid, devid)):
+                        if self.simu.rng.random()*100 <= get_CAD_prob(self.simu.get_dist(self.pid, devid), self.simu.get_txpow(devid), self.net_id, self.simu.same_cluster(self.pid, devid)):
                             if self.simu.log_events:
                                 self.simu.MainLogger.info((self.pid, "CAD + ", self.simu.env.now))
                             return (True)
                     else:
-                        if rng.random()*100 <= get_CAD_prob(self.dist_to_center, self.simu.get_txpow(devid), self.net_id, self.simu.same_cluster(self.pid, devid)):
+                        if self.simu.rng.random()*100 <= get_CAD_prob(self.dist_to_center, self.simu.get_txpow(devid), self.net_id, self.simu.same_cluster(self.pid, devid)):
                             if self.simu.log_events:
                                 self.simu.MainLogger.info((self.pid, "CAD + ", self.simu.env.now))                        
                             return (True)                    
                 else: # for testing e.g. all CAD have 80% success rate
-                    if rng.random()*100 <= self.simu.networks[self.net_id]["CAD_prob"] and self.simu.networks[self.net_id]["CAD_prob"] != 0:
+                    if self.simu.rng.random()*100 <= self.simu.networks[self.net_id]["CAD_prob"] and self.simu.networks[self.net_id]["CAD_prob"] != 0:
                         if self.simu.log_events:
                             self.simu.MainLogger.info((self.pid, "CAD + ", self.simu.env.now))                    
                         return (True)                    
@@ -728,7 +728,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
 
                         else: # kamikaze the frame
                             yield self.simu.env.timeout(self.nav_period) # wait for known
-                            self.backoff = rng.integers(my_node_profile["Wcanl_min_sym"], my_node_profile["Wcanl_max_sym"] + 1)*self.packet.symTime# 64 == 2**Wbusy_maxBE
+                            self.backoff = self.simu.rng.integers(my_node_profile["Wcanl_min_sym"], my_node_profile["Wcanl_max_sym"] + 1)*self.packet.symTime# 64 == 2**Wbusy_maxBE
                             yield self.simu.env.timeout(self.backoff) # wait a random bo
                             self.kamikaze += 1
                             self.MAC_state = constants.CANL_send_DATA # go sending
@@ -759,7 +759,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                         
                         if my_node_profile["CANL22_P"] != 0: # never used since 2023
                             #Obsolete: set proba defining if the node transmits data right after RTS or after a "listen 2" phase
-                            self.my_P = rng.integers(0, 101)
+                            self.my_P = self.simu.rng.integers(0, 101)
 
                         # CADs before LISTEN, optional
                         channel_found_busy = False                    
@@ -833,7 +833,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                                     if self.remainder == -1:
 
                                         # self.backoff = rng.integers(Wclear_min_sym, 2**self.Wclear_BE + 1)                        
-                                        self.remainder = rng.integers(my_node_profile["Wclear_min_CAD"], my_node_profile["Wclear_max_CAD"] + 1)                        
+                                        self.remainder = self.simu.rng.integers(my_node_profile["Wclear_min_CAD"], my_node_profile["Wclear_max_CAD"] + 1)                        
 
                                     for CAD_id in range(self.remainder):
                                         self.n_CAD = self.n_CAD + 1
@@ -878,7 +878,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
 
                                 else: #passive BO when clear
 
-                                    self.backoff = self.packet.symTime*rng.integers(my_node_profile["Wclear_min_sym"], my_node_profile["Wclear_max_sym"] + 1)
+                                    self.backoff = self.packet.symTime*self.simu.rng.integers(my_node_profile["Wclear_min_sym"], my_node_profile["Wclear_max_sym"] + 1)
                                     yield self.simu.env.timeout(self.backoff)
                                     self.backoff = 0
 
@@ -950,7 +950,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                                     CANL_win_max = max(my_node_profile["CANL22_L1_min"], my_node_profile["CANL22_L1_MAX"] - my_node_profile["CANL22_fair_factor"]*(my_node_profile["n_retry"] - self.n_retry))
 
                                 # compute listen window
-                                listen_time = rng.integers(
+                                listen_time = self.simu.rng.integers(
                                     my_node_profile["CANL22_L1_min"],
                                     CANL_win_max + 1
                                     )*self.packet.symTime # + self.packet.rectime# + .131
@@ -1607,7 +1607,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                             if my_node_profile["passive_BO_when_busy"] and (self.n_retry > 0):# don't do busy BO at the end, do ultimate BO
                                 #here we just delay by a random back off timer to retry again
                                 #random backoff [Wbusy_min_airtime_B, 2**Wbusy_BE]
-                                self.backoff = airtime(self.packet.sf, self.packet.cr, my_node_profile["Wbusy_min_airtime_B"], self.packet.bw, explicit = (self.simu.networks[self.net_id]["LoRa_PHY_HDR"] == 0)) + self.packet.symTime*rng.integers(0, 2**self.Wbusy_BE + 1)
+                                self.backoff = airtime(self.packet.sf, self.packet.cr, my_node_profile["Wbusy_min_airtime_B"], self.packet.bw, explicit = (self.simu.networks[self.net_id]["LoRa_PHY_HDR"] == 0)) + self.packet.symTime*self.simu.rng.integers(0, 2**self.Wbusy_BE + 1)
                                 if my_node_profile["Wbusy_exp_backoff"]:
                                     if self.Wbusy_BE < my_node_profile["Wbusy_maxBE"]:
                                         self.Wbusy_BE = self.Wbusy_BE + 1
@@ -1626,7 +1626,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                                 if self.remainder == -1:
 
                                     # self.backoff = rng.integers(Wclear_min_sym, 2**self.Wclear_BE + 1)                        
-                                    self.remainder = rng.integers(my_node_profile["Wclear_min_CAD"], my_node_profile["Wclear_max_CAD"] + 1)                        
+                                    self.remainder = self.simu.rng.integers(my_node_profile["Wclear_min_CAD"], my_node_profile["Wclear_max_CAD"] + 1)                        
 
                                 for CAD_id in range(self.remainder):
                                     self.n_CAD = self.n_CAD + 1
@@ -1669,7 +1669,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                                 else: # BO is successfully finished
                                     self.remainder = -1
                             else:
-                                self.backoff = self.packet.symTime*rng.integers(my_node_profile["Wclear_min_sym"], my_node_profile["Wclear_max_sym"] + 1)
+                                self.backoff = self.packet.symTime*self.simu.rng.integers(my_node_profile["Wclear_min_sym"], my_node_profile["Wclear_max_sym"] + 1)
                                 yield self.simu.env.timeout(self.backoff)
                                 self.backoff = 0
 
@@ -1736,7 +1736,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                     self.n_aborted = self.n_aborted + 1
                 else:
                     if (self.n_retry == 0 or broken_by_lack_of_channels ): # aloha after retries
-                        self.backoff = self.packet.symTime*rng.integers(my_node_profile["Wultim_min_sym"], my_node_profile["Wultim_max_sym"] + 1)
+                        self.backoff = self.packet.symTime*self.simu.rng.integers(my_node_profile["Wultim_min_sym"], my_node_profile["Wultim_max_sym"] + 1)
                         yield self.simu.env.timeout(self.backoff)   
                         self.backoff = 0
                         self.kamikaze += 1
@@ -1837,12 +1837,12 @@ class LoRa_CSS_Packet(Generic_Elements.Packet):
 
         # (obsolete) randomize configuration values
         if self.simu.networks[self.net_id]["lora24GHz"]:
-            self.sf = rng.integers(5, 13)
-            self.bw = rng.choice([203.125, 406.250, 812.5, 1625])
+            self.sf = self.simu.rng.integers(5, 13)
+            self.bw = self.simu.rng.choice([203.125, 406.250, 812.5, 1625])
         else:    
-            self.sf = rng.integers(6, 13)
-            self.bw = rng.choice([125, 250, 500])
-        self.cr = rng.integers(1, 5)
+            self.sf = self.simu.rng.integers(6, 13)
+            self.bw = self.simu.rng.choice([125, 250, 500])
+        self.cr = self.simu.rng.integers(1, 5)
 
 
         #2026 October
@@ -1921,9 +1921,9 @@ class LoRa_CSS_Packet(Generic_Elements.Packet):
     def setDataPayloadSize(self):
         if self.simu.networks[self.net_id]["variablePayloadSize"]:
             if self.simu.networks[self.net_id]["normalPayloadSize"]:
-                self.dataPayloadSize = rng.normal(self.simu.networks[self.net_id]["normaldist_mean_payload_size"], self.simu.networks[self.net_id]["normaldist_sigma_payload_size"], 1).astype('int').clip(self.simu.networks[self.net_id]["dist_min_payload_size"], self.simu.networks[self.net_id]["dist_max_payload_size"])[0]
+                self.dataPayloadSize = self.simu.rng.normal(self.simu.networks[self.net_id]["normaldist_mean_payload_size"], self.simu.networks[self.net_id]["normaldist_sigma_payload_size"], 1).astype('int').clip(self.simu.networks[self.net_id]["dist_min_payload_size"], self.simu.networks[self.net_id]["dist_max_payload_size"])[0]
             else: # uniform
-                self.dataPayloadSize = rng.integers(self.simu.networks[self.net_id]["dist_min_payload_size"], self.simu.networks[self.net_id]["dist_max_payload_size"] + 1)
+                self.dataPayloadSize = self.simu.rng.integers(self.simu.networks[self.net_id]["dist_min_payload_size"], self.simu.networks[self.net_id]["dist_max_payload_size"] + 1)
 
             if self.simu.networks[self.net_id]["profiles"][self.profile]["protocol"] == "CANL22":
             # if CANL22: #depends on scenario, data length included in header or in data... 
@@ -1995,7 +1995,7 @@ def get_CAD_prob(distance, txpower, net_id, in_same_cluster = False):
 
 # pre-simulate the CAD proba of success as the smoothed reception rate of 100 packets at each meter and interpolated
 # depends on propa variables and lora params
-def prepare_distrib_func(loss_per_building, aper, maxDist, radio_params, networks):
+def prepare_distrib_func(loss_per_building, aper, maxDist, radio_params, networks, rng):
     # global CAD_distrib_funcs
     distrib_funcs = {}
     for txp in constants.power_levels:
@@ -2070,10 +2070,10 @@ def prepare_distrib_func(loss_per_building, aper, maxDist, radio_params, network
 
 
 
-def prepare_CAD_model(maxDist, radio_params, networks):
+def prepare_CAD_model(maxDist, radio_params, networks, rng):
 
 
-    prepare_distrib_func(constants.loss_per_building_CAD, constants.obstruction_dB_CAD, maxDist, radio_params, networks)
+    prepare_distrib_func(constants.loss_per_building_CAD, constants.obstruction_dB_CAD, maxDist, radio_params, networks, rng)
 
     # CAD_distrib_funcs = prepare_distrib_func(constants.loss_per_building_CAD, constants.obstruction_dB_CAD, 12, 125, maxDist, networks)
     # prepared for 1 sf 1 bw for each net (net_SF)

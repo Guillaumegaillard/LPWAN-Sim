@@ -9,7 +9,7 @@
 
 
 import numpy as np
-rng = np.random.default_rng()
+# rng = np.random.default_rng()
 
 import Generic_Elements
 import constants
@@ -348,10 +348,10 @@ class Mioty_Telegram(Generic_Elements.Packet):
             nb_splits_ext = self.dataPayloadSize - 20
 
         # node transmitters may offset +-5 channels
-        channel_offset = rng.integers(-5,6) + 5 # this last +5 allows subchan ids to be in range(0,36) => get_chan() func currently computes subchan's center freqs starting from chan's bottom (lowest freq)
+        channel_offset = self.simu.rng.integers(-5,6) + 5 # this last +5 allows subchan ids to be in range(0,36) => get_chan() func currently computes subchan's center freqs starting from chan's bottom (lowest freq)
 
 
-        pattern_id = rng.integers(8) # 8 patterns available down here
+        pattern_id = self.simu.rng.integers(8) # 8 patterns available down here
 
         # times
         time_pattern = []
@@ -369,7 +369,7 @@ class Mioty_Telegram(Generic_Elements.Packet):
 
         #extension frame
         for j in range(nb_splits_ext): # intervals before each ext split
-            inter_center_symb_interval = 337 + rng.integers(128) # 337 (66 for g3)
+            inter_center_symb_interval = 337 + self.simu.rng.integers(128) # 337 (66 for g3)
             time_pattern.append( (inter_center_symb_interval - self.split_duration) *1000/self.symbol_rate) #ms (1 burst is 36 symb)
 
         # subchans
@@ -380,7 +380,7 @@ class Mioty_Telegram(Generic_Elements.Packet):
 
         #extension frame
         for j in range(nb_splits_ext):
-            freq_pattern.append(rng.integers(25)+channel_offset) 
+            freq_pattern.append(self.simu.rng.integers(25)+channel_offset) 
 
         # 1 burst = ~15.12 ms = 36 symb at 2380.371/s
         # 300symb = ~126ms

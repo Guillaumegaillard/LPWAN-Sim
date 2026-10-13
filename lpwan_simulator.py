@@ -10,7 +10,9 @@
 
 import simpy
 import numpy as np
-rng = np.random.default_rng()
+
+# Init a random seed sequence
+rand_seq = np.random.SeedSequence()
 
 import sys
 import os
@@ -129,9 +131,16 @@ class Network:
 
 # the main class for this simulation: controls/runs the simulation scenario
 class Simulator:
-    def __init__(self,env):
+    def __init__(self,env,run_index):
         self.env = env # env is the Simpy environment
         self.endSim = 0
+
+        self.run_index = run_index
+
+        # use run index and entropy to get states that are (to very high probability) independent of each other
+        # keep the entropy to log/pickle it for reproducibility: 
+        self.seed = rand_seq.entropy
+        self.rng = np.random.default_rng([run_index, self.seed])
 
         #### variables updated with the transmissions
         self.nrLost = 0
@@ -353,7 +362,7 @@ class Simulator:
                         "toa":self.get_rectime(tx_id),
                         # "toa":nodes[txid].packet.rectime,
                         "is_RTS":nodes[txid].packet.ptype == constants.rtsPacketType,
-                        "dataPayloadSize_in_RTS":rng.integers(0,self.networks[net_id]["max_payload_size"]+1) if nodes[txid].packet.dataPayloadSize==(self.networks[net_id]["profiles"][node.profile]["CANL22_RTS_hdr_size"]+1) else nodes[txid].packet.dataPayloadSize, # if Data of RTS size, random size
+                        "dataPayloadSize_in_RTS":self.rng.integers(0,self.networks[net_id]["max_payload_size"]+1) if nodes[txid].packet.dataPayloadSize==(self.networks[net_id]["profiles"][node.profile]["CANL22_RTS_hdr_size"]+1) else nodes[txid].packet.dataPayloadSize, # if Data of RTS size, random size
                         "dataPayloadSize_in_EH":nodes[txid].packet.dataPayloadSize, # in explicit header
                         "start":self.env.now,
                         "interfering":[(i,nodes[uid(*i)].packet.ptype) for i in OnAir],
@@ -463,7 +472,7 @@ class Simulator:
                             "toa":self.get_rectime(tx_id),
                             # "toa":nodes[txid].packet.rectime,
                             "is_RTS":nodes[txid].packet.ptype == constants.rtsPacketType,
-                            "dataPayloadSize_in_RTS":rng.integers(0,self.networks[net_id]["max_payload_size"]+1) if nodes[txid].packet.dataPayloadSize==(self.networks[net_id]["profiles"][node.profile]["CANL22_RTS_hdr_size"]+1) else nodes[txid].packet.dataPayloadSize, # if Data of RTS size, random size
+                            "dataPayloadSize_in_RTS":self.rng.integers(0,self.networks[net_id]["max_payload_size"]+1) if nodes[txid].packet.dataPayloadSize==(self.networks[net_id]["profiles"][node.profile]["CANL22_RTS_hdr_size"]+1) else nodes[txid].packet.dataPayloadSize, # if Data of RTS size, random size
 
                             "dataPayloadSize_in_EH":nodes[txid].packet.dataPayloadSize, # in explicit header
                             "start":self.env.now,
@@ -1373,6 +1382,9 @@ def build_dist_mat(topos, topo_scale):
 # insert parameters into loop
 def main_with_params(params):
 
+    # rng = np.random.default_rng([params["run_index"], 25])
+    # rng = np.random.default_rng([worker_id, root_seed])
+
     global distance_matrix  # numpy array with distances between devs
 
     # declare global lists 
@@ -1381,7 +1393,7 @@ def main_with_params(params):
     global nodes,gateways,active_nodes,flat_ndcs,flat_net_ids,OnAir,channel_log,listen_log,powerCaptures
 
     env = simpy.Environment()
-    simu = Simulator(env)
+    simu = Simulator(env,params["run_index"])
 
 
     #############################################
@@ -1658,7 +1670,7 @@ def main_with_params(params):
 
     # preparation in LoRa_CSS.py
     if must_prepare_cads:
-        LoRa_CSS.prepare_CAD_model(simu.dist_max_overall, simu.radio_params, simu.networks)
+        LoRa_CSS.prepare_CAD_model(simu.dist_max_overall, simu.radio_params, simu.networks, simu.rng)
 
 
 
@@ -1799,7 +1811,7 @@ def main_with_params(params):
         # Path loss exponents to neighs
         node.packet.gamma_array = np.zeros((simu.nrNodes))
         if simu.networks[node.net_id]["normal_gamma_ED"]:
-            node.packet.gamma_array = rng.normal(simu.networks[node.net_id]["gamma_ED"],simu.networks[node.net_id]["sigma_gamma_ED"],node.packet.gamma_array.shape)
+            node.packet.gamma_array = simu.rng.normal(simu.networks[node.net_id]["gamma_ED"],simu.networks[node.net_id]["sigma_gamma_ED"],node.packet.gamma_array.shape)
         else:
             node.packet.gamma_array += simu.networks[node.net_id]["gamma_ED"]
 
