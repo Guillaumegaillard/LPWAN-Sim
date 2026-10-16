@@ -719,8 +719,13 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                             #reset for sending a new packet              
                             
                             self.total_retry += my_node_profile["n_retry"]
+                            self.max_retries = my_node_profile["n_retry"]
                             self.n_retry = my_node_profile["n_retry"]
                             self.nav = 0
+                            self.attempt_latency += (self.simu.env.now - self.attempt_start)
+                            self.min_attempt_latency = min(self.min_attempt_latency, (self.simu.env.now - self.attempt_start))
+                            self.max_attempt_latency = max(self.max_attempt_latency, (self.simu.env.now - self.attempt_start))
+
 
                             self.update_available_channels()
 
@@ -738,9 +743,15 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                             #reset nav to start again a complete CA procedure
                             self.nav = 0
                             self.nav_period = self.nav_period_default
+                            self.attempt_latency += (self.simu.env.now - self.attempt_start)
+                            self.min_attempt_latency = min(self.min_attempt_latency, (self.simu.env.now - self.attempt_start))
+                            self.max_attempt_latency = max(self.max_attempt_latency, (self.simu.env.now - self.attempt_start))
+                            
                         else:
                             #this is an initial transmit attempt
                             # set stats
+
+
                             self.want_transmit_time = self.simu.env.now
 
                             self.simu.nets[self.net_id].n_transmit += 1
@@ -756,6 +767,7 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                             self.simu.last_transmit_time = self.simu.env.now                
                             self.simu.nets[self.net_id].last_transmit_time = self.simu.env.now                
                 
+                        self.attempt_start = self.simu.env.now
                         
                         if my_node_profile["CANL22_P"] != 0: # never used since 2023
                             #Obsolete: set proba defining if the node transmits data right after RTS or after a "listen 2" phase
@@ -1238,17 +1250,26 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                     #change packet type to get the correct time-on-air
                     self.packet.setPacketType(constants.dataPacketType)
 
+
+
+
                     #wake up radio if not yet
                     if self.simu.env.now - self.radio_on_last > self.radio_wake_up_time:
                         yield self.simu.env.timeout(self.radio_wake_up_time)
                         self.radio_wake_up_number += 1
 
+                    self.attempt_latency += (self.simu.env.now - self.attempt_start)
+                    self.min_attempt_latency = min(self.min_attempt_latency, (self.simu.env.now - self.attempt_start))
+                    self.max_attempt_latency = max(self.max_attempt_latency, (self.simu.env.now - self.attempt_start))
 
                     # DATA time sending and receiving
                     self.n_data_sent = self.n_data_sent + 1
                     self.n_payload_sent += self.packet.dataPayloadSize - my_node_profile["CANL22_data_hdr_size"]
                     self.simu.nets[self.net_id].nrSent += 1
                     self.total_retry += my_node_profile["n_retry"] - self.n_retry
+                    self.max_retries = max(self.max_retries, my_node_profile["n_retry"] - self.n_retry)
+                    self.min_retries = min(self.min_retries, my_node_profile["n_retry"] - self.n_retry)
+
                     self.latency = self.latency + (self.simu.env.now - self.queued_time)
 
 
@@ -1497,6 +1518,9 @@ class LoRa_CSS_Node(Generic_Elements.Node):
 
                 # retry until...
                 while self.n_retry and channel_found_busy:
+
+                    self.attempt_start = self.simu.env.now
+
                     if my_node_profile["protocol"] == "CAD+Backoff":
                         # perform DIFS
                         if my_node_profile["nCAD_DIFS"] > 0:
@@ -1711,6 +1735,10 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                                 else:
                                     channel_found_busy = False
 
+                    self.attempt_latency += (self.simu.env.now - self.attempt_start)
+                    self.min_attempt_latency = min(self.min_attempt_latency, (self.simu.env.now - self.attempt_start))
+                    self.max_attempt_latency = max(self.max_attempt_latency, (self.simu.env.now - self.attempt_start))
+
                     if channel_found_busy:
                         if my_node_profile["CA_Change_Channel"]:
                             if self.n_retry > 0:
@@ -1727,7 +1755,13 @@ class LoRa_CSS_Node(Generic_Elements.Node):
                 self.update_available_channels() # reset list of channels
                 self.Wbusy_BE = my_node_profile["Wbusy_BE"] if "Wbusy_BE" in my_node_profile else -1
                 # self.backoff = 0
-                self.total_retry += my_node_profile["n_retry"] - self.n_retry if "n_retry" in my_node_profile else 0
+
+                if "n_retry" in my_node_profile:
+                    self.total_retry += my_node_profile["n_retry"] - self.n_retry
+                    self.max_retries = max(self.max_retries, my_node_profile["n_retry"] - self.n_retry)
+                    self.min_retries = min(self.min_retries, my_node_profile["n_retry"] - self.n_retry)
+
+
                 self.remainder = -1
                 
 

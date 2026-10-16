@@ -283,6 +283,9 @@ class Node():
         self.latency=0 # of current packet 
         self.success_latency=0 # of all packets, summed and then averaged
         self.min_success_latency=self.period*1000 # init at very large value
+        self.attempt_latency = 0 # of all CS attempt, summed and then averaged
+        self.min_attempt_latency = self.period*1000 # init at very large value
+        self.max_attempt_latency = 0
 
         ### variables for packet generation and queue
         self.gen_times=[0]
@@ -293,7 +296,9 @@ class Node():
         self.total_listen_time = 0 # for all time in simu
 
         ### multiple access
-        self.total_retry=0 # stat for whole sim
+        self.total_retry=0 # stat for each dev during whole sim
+        self.min_retries=1000 # stat for each dev during whole sim
+        self.max_retries=0 # stat for each dev during whole sim
 
     # overridden in tech specific heirs (because it is tech dependent)
     def get_rx_sensitivity(self, packet):

@@ -999,7 +999,7 @@ class Simulator:
 
             res["nodes"][node.node_id]["mean_latency"]= node.latency/node.n_data_sent if node.n_data_sent>0 else -1
             res["nodes"][node.node_id]["mean_success_latency"]= node.success_latency/node.n_data_success if node.n_data_success>0 else -1
-            res["nodes"][node.node_id]["min_success_latency"]= node.min_success_latency
+            res["nodes"][node.node_id]["min_success_latency"]= node.min_success_latency if node.n_data_success>0 else -1
             res["nodes"][node.node_id]["aborted_packets"]= node.n_aborted
             res["nodes"][node.node_id]["collided_packets"]= node.n_collided
             res["nodes"][node.node_id]["captured_packets"]= node.n_captured
@@ -1007,7 +1007,13 @@ class Simulator:
             res["nodes"][node.node_id]["dropped_packets"]= node.n_dropped
             res["nodes"][node.node_id]["kamikazed_packets"]= node.kamikaze
 
-            res["nodes"][node.node_id]["mean_retry"]= node.total_retry/node.n_data_sent if node.n_data_sent>0 else -1
+            res["nodes"][node.node_id]["mean_retry"]= node.total_retry/(node.n_data_sent+node.n_aborted) if node.n_data_sent+node.n_aborted>0 else -1
+            res["nodes"][node.node_id]["min_retries"]= node.min_retries if node.total_retry>0 else -1
+            res["nodes"][node.node_id]["max_retries"]= node.max_retries
+            n_attempts = node.total_retry + node.cycle
+            res["nodes"][node.node_id]["attempt_latency"]= node.attempt_latency/n_attempts if n_attempts>0 else -1
+            res["nodes"][node.node_id]["min_attempt_latency"]= node.min_attempt_latency if node.n_data_sent+node.n_aborted>0 else -1
+            res["nodes"][node.node_id]["max_attempt_latency"]= node.max_attempt_latency
 
             res["nodes"][node.node_id]["sent_rts_packets"]=node.n_rts_sent
 
@@ -1097,7 +1103,7 @@ class Simulator:
                 sum_data_sent+=n.n_data_sent
                 legit_having_sent+=1
         if sum_data_sent>0:
-            res["TOTAL"]["mean_latency"]=sum_lat/sum_data_sent/legit_having_sent
+            res["TOTAL"]["mean_latency"]=sum_lat/sum_data_sent#/legit_having_sent
         else:
             res["TOTAL"]["mean_latency"]=-1    
 
@@ -1122,8 +1128,16 @@ class Simulator:
         res["TOTAL"]["cumulated_RX_time_s"]=sum( (n.total_listen_time) for n in legit_nodes)/legit_nrNodes/1000
 
 
+
+
         # "mean_retries": 
         sum_retries=0
+        min_retries = 0
+        max_retries = 0
+        sum_attempt_latency = 0
+        min_attempt_latencies = 0
+        max_attempt_latencies = 0
+
         sum_data_gen=0
         legit_having_gen=0
         for n in legit_nodes:
@@ -1131,11 +1145,28 @@ class Simulator:
                 sum_retries+=n.total_retry
                 sum_data_gen+=n.cycle
                 legit_having_gen+=1
+
+                min_retries += n.min_retries if n.total_retry >0 else 0
+                max_retries += n.max_retries
+                sum_attempt_latency += n.attempt_latency
+                min_attempt_latencies += n.min_attempt_latency if n.n_data_sent + n.n_aborted >0 else 0 
+                max_attempt_latencies += n.max_attempt_latency
+           
         if sum_data_gen>0:
             res["TOTAL"]["mean_retry"]=sum_retries/sum_data_gen#/legit_having_gen
+            res["TOTAL"]["min_retries"]=min_retries/legit_having_gen
+            res["TOTAL"]["max_retries"]=max_retries/legit_having_gen
+            tt_attempts = sum_retries + sum_data_gen
+            res["TOTAL"]["attempt_latency"]=sum_attempt_latency/tt_attempts if tt_attempts>0 else -1
+            res["TOTAL"]["min_attempt_latency"]=min_attempt_latencies/legit_having_gen
+            res["TOTAL"]["max_attempt_latency"]=max_attempt_latencies/legit_having_gen
+
             res["TOTAL"]["mean_payload_length"]=sum(n.n_payload_gen for n in legit_nodes)/sum_data_gen
         else:
             res["TOTAL"]["mean_retry"]=-1 
+            res["TOTAL"]["min_retries"]= -1
+            res["TOTAL"]["max_retries"]= -1
+            res["TOTAL"]["attempt_latency"]= -1
             res["TOTAL"]["mean_payload_length"]=-1 
         # res["TOTAL"]["mean_retry"]=sum((float(n.total_retry)/float(n.n_data_sent)) for n in legit_nodes)/legit_nrNodes
 
