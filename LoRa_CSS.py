@@ -124,8 +124,12 @@ class LoRa_CSS_Node(Generic_Elements.Node):
             # device is capable of using header right after the "header valid" interrupt
             if self.simu.networks[self.net_id]["profiles"][self.profile]["Interrupts_on_header_valid"]: 
                 # CR is 1, 2, 3 or 4 for respective coding rates 4/5, 4/6, 4/7 or 4/8
-                # header is tx with cr 4
-                self.wait_PHY_interrupt = airtime(self.packet.sf, 4, 0, self.packet.bw, explicit = (self.simu.networks[self.net_id]["LoRa_PHY_HDR"] == 0))
+                # header is tx with cr 4, but airtime func must compute this "hdr at cr 4" phase
+                # does not include a processing time.
+
+                # 
+                # self.wait_PHY_interrupt = airtime(self.packet.sf, 4, 0, self.packet.bw, explicit = (self.simu.networks[self.net_id]["LoRa_PHY_HDR"] == 0))
+                self.wait_PHY_interrupt = airtime(self.packet.sf, self.packet.cr, 0, self.packet.bw, explicit = (self.simu.networks[self.net_id]["LoRa_PHY_HDR"] == 0))
             else:
                 self.wait_PHY_interrupt = self.rts_rectime
         else: # RTS is not used anyway, let's consider a 5B length for compatibility
